@@ -1,0 +1,8 @@
+package: sparkyfitness
+output: internal/sparkyfitness/sparkyfitness_client.go
+generate:
+  client: true
+  models: true
+  embedded-spec: false
+output-options:
+  skip-prune: false
