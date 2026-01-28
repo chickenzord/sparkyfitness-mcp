@@ -26,7 +26,7 @@ A stateless Go-based MCP (Model Context Protocol) server that acts as an API bri
 
 ## Prerequisites
 
-- Go 1.23 or later
+- Go 1.25 or later
 - SparkyFitness API access (URL and API key)
 
 ## Configuration
