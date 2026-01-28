@@ -2,18 +2,21 @@ package sparkyfitness
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	"net/url"
+	"strconv"
 
 	"github.com/chickenzord/sparkyfitness-mcp/internal/config"
 )
 
-// SparkyClient wraps the generated SparkyFitness API client with authentication and configuration
-type SparkyClient struct {
-	client *ClientWithResponses
-	config *config.Config
+// Client is a manual HTTP client for the SparkyFitness backend API
+type Client struct {
+	httpClient *http.Client
+	baseURL    string
+	config     *config.Config
 }
 
 // authInterceptor adds authentication to outgoing requests
@@ -23,18 +26,15 @@ type authInterceptor struct {
 }
 
 func (a *authInterceptor) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Add API key authentication via cookie
-	// SparkyFitness uses cookie-based auth with "token" cookie
-	req.AddCookie(&http.Cookie{
-		Name:  "token",
-		Value: a.apiKey,
-	})
+	// Add API key authentication via Bearer token
+	// Cookie-based auth is for frontend UI, API clients use Bearer tokens
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", a.apiKey))
 
 	return a.next.RoundTrip(req)
 }
 
-// NewSparkyClient creates a new SparkyFitness API client with authentication
-func NewSparkyClient(cfg *config.Config) (*SparkyClient, error) {
+// NewClient creates a new SparkyFitness API client with authentication
+func NewClient(cfg *config.Config) (*Client, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("config cannot be nil")
 	}
@@ -55,116 +55,61 @@ func NewSparkyClient(cfg *config.Config) (*SparkyClient, error) {
 		},
 	}
 
-	// Create generated client with responses
-	generatedClient, err := NewClientWithResponses(cfg.SparkyFitnessAPIURL, WithHTTPClient(httpClient))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	return &SparkyClient{
-		client: generatedClient,
-		config: cfg,
+	return &Client{
+		httpClient: httpClient,
+		baseURL:    cfg.SparkyFitnessAPIURL,
+		config:     cfg,
 	}, nil
 }
 
-// UpsertFood creates or retrieves a food by name and optional brand
-// Returns the food ID
-func (c *SparkyClient) UpsertFood(ctx context.Context, name string, brand *string) (openapi_types.UUID, error) {
-	// Build food suggestion with name and brand in data
-	foodData := map[string]interface{}{
-		"name": name,
-	}
-	if brand != nil && *brand != "" {
-		foodData["brand"] = *brand
+// SearchFoods searches for foods by name using the backend API
+// Note: broadMatch and exactMatch are mutually exclusive. If broadMatch=false, exactMatch will be used.
+func (c *Client) SearchFoods(ctx context.Context, name string, broadMatch bool, limit int) ([]Food, error) {
+	// Build query parameters
+	params := url.Values{}
+	params.Set("name", name)
+
+	// broadMatch and exactMatch are mutually exclusive - one must be true
+	if broadMatch {
+		params.Set("broadMatch", "true")
+	} else {
+		params.Set("exactMatch", "true")
 	}
 
-	body := PostFoodCrudCreateOrGetJSONRequestBody{
-		FoodSuggestion: &Food{
-			Name: name,
-			Data: foodData,
-		},
-	}
+	params.Set("limit", strconv.Itoa(limit))
 
-	resp, err := c.client.PostFoodCrudCreateOrGetWithResponse(ctx, body)
+	// Build request URL
+	reqURL := fmt.Sprintf("%s/foods?%s", c.baseURL, params.Encode())
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
-		return openapi_types.UUID{}, fmt.Errorf("failed to upsert food: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return openapi_types.UUID{}, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), string(resp.Body))
-	}
-
-	if resp.JSON200 == nil || resp.JSON200.FoodId == nil {
-		return openapi_types.UUID{}, fmt.Errorf("unexpected response format: missing food ID")
-	}
-
-	return *resp.JSON200.FoodId, nil
-}
-
-// CreateFoodVariant creates a new food variant with nutrition data
-func (c *SparkyClient) CreateFoodVariant(ctx context.Context, variant FoodVariant) (*FoodVariant, error) {
-	resp, err := c.client.PostFoodCrudFoodVariantsWithResponse(ctx, variant)
+	// Execute request (auth interceptor will add Bearer token)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create food variant: %w", err)
+		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode() != http.StatusCreated {
-		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), string(resp.Body))
-	}
-
-	if resp.JSON201 == nil {
-		return nil, fmt.Errorf("unexpected response format")
-	}
-
-	return resp.JSON201, nil
-}
-
-// SearchFoods searches for foods by name
-func (c *SparkyClient) SearchFoods(ctx context.Context, name string, exactMatch bool) ([]Food, error) {
-	params := &GetFoodCrudSearchParams{
-		Name:       name,
-		ExactMatch: &exactMatch,
-	}
-
-	resp, err := c.client.GetFoodCrudSearchWithResponse(ctx, params)
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search foods: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), string(resp.Body))
+	// Check status code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	if resp.JSON200 == nil {
-		return nil, fmt.Errorf("unexpected response format")
+	// Parse response
+	var searchResp SearchFoodsResponse
+	if err := json.Unmarshal(body, &searchResp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	return *resp.JSON200, nil
-}
-
-// ListFoodVariants lists all variants for a given food
-func (c *SparkyClient) ListFoodVariants(ctx context.Context, foodID openapi_types.UUID) ([]FoodVariant, error) {
-	params := &GetFoodCrudFoodVariantsParams{
-		FoodId: foodID,
-	}
-
-	resp, err := c.client.GetFoodCrudFoodVariantsWithResponse(ctx, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list food variants: %w", err)
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), string(resp.Body))
-	}
-
-	if resp.JSON200 == nil {
-		return nil, fmt.Errorf("unexpected response format")
-	}
-
-	return *resp.JSON200, nil
-}
-
-// GetUnderlyingClient returns the underlying generated client for advanced usage
-func (c *SparkyClient) GetUnderlyingClient() *ClientWithResponses {
-	return c.client
+	return searchResp.SearchResults, nil
 }
