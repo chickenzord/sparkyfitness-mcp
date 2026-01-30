@@ -52,8 +52,12 @@ type SearchFoodsOutput struct {
 // RegisterSearchFoods registers the search_foods tool with the MCP server
 func (r *Registry) RegisterSearchFoods(server *mcp.Server, client *sparkyfitness.Client) error {
 	tool := &mcp.Tool{
-		Name:        "search_foods",
-		Description: "Search for foods in the SparkyFitness database by name and optional brand. Returns matching foods with their default nutrition information.",
+		Name: "search_foods",
+		Description: "ALWAYS call this FIRST before creating any food to detect duplicates. " +
+			"Search for foods in the SparkyFitness database by name and optional brand. " +
+			"Returns top matching foods (default: 10, configurable via limit parameter) with their food IDs and default variant nutrition data. " +
+			"Use broad_match=true (default) for fuzzy case-insensitive matching to find similar foods. " +
+			"The food_id from results can be used with add_food_variant to add new serving sizes to existing foods.",
 	}
 
 	handler := func(ctx context.Context, request *mcp.CallToolRequest, input SearchFoodsInput) (*mcp.CallToolResult, SearchFoodsOutput, error) {

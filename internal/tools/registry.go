@@ -40,8 +40,10 @@ func (r *Registry) RegisterAll(server *mcp.Server) error {
 		return fmt.Errorf("failed to register add_food_variant: %w", err)
 	}
 
-	// Tool implementations will be added in separate issues
-	// - create_food_variant (sfmcp-boc)
+	// Register create_food_variant tool (sfmcp-248.4, sfmcp-boc)
+	if err := r.RegisterCreateFoodVariant(server, client); err != nil {
+		return fmt.Errorf("failed to register create_food_variant: %w", err)
+	}
 
 	return nil
 }

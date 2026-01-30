@@ -163,3 +163,13 @@ func (c *Client) AddFoodVariant(ctx context.Context, req *AddFoodVariantRequest)
 
 	return &addVariantResp, nil
 }
+
+// BaseURL returns the base URL of the API
+func (c *Client) BaseURL() string {
+	return c.baseURL
+}
+
+// HTTPClient returns the underlying HTTP client
+func (c *Client) HTTPClient() *http.Client {
+	return c.httpClient
+}
