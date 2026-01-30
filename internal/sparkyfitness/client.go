@@ -1,6 +1,7 @@
 package sparkyfitness
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -112,4 +113,53 @@ func (c *Client) SearchFoods(ctx context.Context, name string, broadMatch bool, 
 	}
 
 	return searchResp.SearchResults, nil
+}
+
+// AddFoodVariant adds a new variant to an existing food
+// Backend endpoint: POST /foods/food-variants
+// Returns 201 Created with variant ID
+func (c *Client) AddFoodVariant(ctx context.Context, req *AddFoodVariantRequest) (*AddFoodVariantResponse, error) {
+	// Build request URL
+	reqURL := fmt.Sprintf("%s/foods/food-variants", c.baseURL)
+
+	// Marshal request body
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Create HTTP request
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set content type
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	// Execute request (auth interceptor will add Bearer token)
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check status code (backend returns 201 Created)
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(respBody))
+	}
+
+	// Parse response
+	var addVariantResp AddFoodVariantResponse
+	if err := json.Unmarshal(respBody, &addVariantResp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &addVariantResp, nil
 }
