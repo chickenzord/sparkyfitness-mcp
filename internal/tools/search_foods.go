@@ -18,29 +18,29 @@ type SearchFoodsInput struct {
 
 // FoodResult represents a single food with its default variant in the search results
 type FoodResult struct {
-	FoodID           string   `json:"food_id" jsonschema:"Unique identifier of the food"`
-	FoodName         string   `json:"food_name" jsonschema:"Name of the food"`
-	Brand            *string  `json:"brand,omitempty" jsonschema:"Brand name if available"`
-	IsCustom         bool     `json:"is_custom" jsonschema:"Whether this is a custom food"`
-	ProviderType     *string  `json:"provider_type,omitempty" jsonschema:"Provider type (e.g., usda, nutritionix)"`
-	VariantID        string   `json:"variant_id" jsonschema:"Unique identifier of the default variant"`
-	ServingSize      float64  `json:"serving_size" jsonschema:"Serving size amount"`
-	ServingUnit      string   `json:"serving_unit" jsonschema:"Unit of measurement for serving"`
-	Calories         float64  `json:"calories" jsonschema:"Calories per serving"`
-	Protein          float64  `json:"protein" jsonschema:"Protein in grams"`
-	Carbs            float64  `json:"carbs" jsonschema:"Carbohydrates in grams"`
-	Fat              float64  `json:"fat" jsonschema:"Fat in grams"`
-	SaturatedFat     float64  `json:"saturated_fat,omitempty" jsonschema:"Saturated fat in grams"`
-	DietaryFiber     float64  `json:"dietary_fiber,omitempty" jsonschema:"Dietary fiber in grams"`
-	Sugars           float64  `json:"sugars,omitempty" jsonschema:"Sugars in grams"`
-	Sodium           float64  `json:"sodium,omitempty" jsonschema:"Sodium in milligrams"`
-	Cholesterol      float64  `json:"cholesterol,omitempty" jsonschema:"Cholesterol in milligrams"`
-	Potassium        float64  `json:"potassium,omitempty" jsonschema:"Potassium in milligrams"`
-	VitaminA         float64  `json:"vitamin_a,omitempty" jsonschema:"Vitamin A"`
-	VitaminC         float64  `json:"vitamin_c,omitempty" jsonschema:"Vitamin C"`
-	Calcium          float64  `json:"calcium,omitempty" jsonschema:"Calcium"`
-	Iron             float64  `json:"iron,omitempty" jsonschema:"Iron"`
-	GlycemicIndex    *string  `json:"glycemic_index,omitempty" jsonschema:"Glycemic index if available"`
+	FoodID        string  `json:"food_id" jsonschema:"Unique identifier of the food"`
+	FoodName      string  `json:"food_name" jsonschema:"Name of the food"`
+	Brand         *string `json:"brand,omitempty" jsonschema:"Brand name if available"`
+	IsCustom      bool    `json:"is_custom" jsonschema:"Whether this is a custom food"`
+	ProviderType  *string `json:"provider_type,omitempty" jsonschema:"Provider type (e.g., usda, nutritionix)"`
+	VariantID     string  `json:"variant_id" jsonschema:"Unique identifier of the default variant"`
+	ServingSize   float64 `json:"serving_size" jsonschema:"Serving size amount"`
+	ServingUnit   string  `json:"serving_unit" jsonschema:"Unit of measurement for serving"`
+	Calories      float64 `json:"calories" jsonschema:"Calories per serving"`
+	Protein       float64 `json:"protein" jsonschema:"Protein in grams"`
+	Carbs         float64 `json:"carbs" jsonschema:"Carbohydrates in grams"`
+	Fat           float64 `json:"fat" jsonschema:"Fat in grams"`
+	SaturatedFat  float64 `json:"saturated_fat,omitempty" jsonschema:"Saturated fat in grams"`
+	DietaryFiber  float64 `json:"dietary_fiber,omitempty" jsonschema:"Dietary fiber in grams"`
+	Sugars        float64 `json:"sugars,omitempty" jsonschema:"Sugars in grams"`
+	Sodium        float64 `json:"sodium,omitempty" jsonschema:"Sodium in milligrams"`
+	Cholesterol   float64 `json:"cholesterol,omitempty" jsonschema:"Cholesterol in milligrams"`
+	Potassium     float64 `json:"potassium,omitempty" jsonschema:"Potassium in milligrams"`
+	VitaminA      float64 `json:"vitamin_a,omitempty" jsonschema:"Vitamin A"`
+	VitaminC      float64 `json:"vitamin_c,omitempty" jsonschema:"Vitamin C"`
+	Calcium       float64 `json:"calcium,omitempty" jsonschema:"Calcium"`
+	Iron          float64 `json:"iron,omitempty" jsonschema:"Iron"`
+	GlycemicIndex *string `json:"glycemic_index,omitempty" jsonschema:"Glycemic index if available"`
 }
 
 // SearchFoodsOutput defines the output structure
@@ -52,12 +52,28 @@ type SearchFoodsOutput struct {
 // RegisterSearchFoods registers the search_foods tool with the MCP server
 func (r *Registry) RegisterSearchFoods(server *mcp.Server, client *sparkyfitness.Client) error {
 	tool := &mcp.Tool{
-		Name: "search_foods",
-		Description: "ALWAYS call this FIRST before creating any food to detect duplicates. " +
-			"Search for foods in the SparkyFitness database by name and optional brand. " +
-			"Returns top matching foods (default: 10, configurable via limit parameter) with their food IDs and default variant nutrition data. " +
-			"Use broad_match=true (default) for fuzzy case-insensitive matching to find similar foods. " +
-			"The food_id from results can be used with add_food_variant to add new serving sizes to existing foods.",
+		Name:  "search_foods",
+		Title: "Search Foods in Database",
+		Description: "🔍 Search for existing foods in the SparkyFitness nutrition database.\n\n" +
+			"**IMPORTANT: ALWAYS call this FIRST before creating any food to prevent duplicates.**\n\n" +
+			"Use Cases:\n" +
+			"• Before creating a new food entry, search to see if it already exists\n" +
+			"• Find existing foods by name and optionally filter by brand\n" +
+			"• Discover food_id values needed for add_food_variant tool\n\n" +
+			"Search Behavior:\n" +
+			"• broad_match=true (default): Fuzzy case-insensitive search - finds similar foods (e.g., 'rice' matches 'White Rice', 'Brown Rice')\n" +
+			"• broad_match=false: Exact matching - only finds precise matches\n" +
+			"• Returns up to 'limit' results (default: 10, recommended: 5 for duplicate checking)\n\n" +
+			"Response:\n" +
+			"• Each result includes food_id (required for add_food_variant)\n" +
+			"• Each result includes variant_id (the default variant)\n" +
+			"• Full nutrition data for the default variant is included\n\n" +
+			"Workflow:\n" +
+			"1. User uploads nutrition label photo\n" +
+			"2. Extract food name, brand, nutrition data\n" +
+			"3. **Call search_foods** with extracted name/brand\n" +
+			"4. If matches found → show user and ask: add variant to existing (use add_food_variant) or create new (use create_food_variant)\n" +
+			"5. If no matches → proceed with create_food_variant",
 	}
 
 	handler := func(ctx context.Context, request *mcp.CallToolRequest, input SearchFoodsInput) (*mcp.CallToolResult, SearchFoodsOutput, error) {

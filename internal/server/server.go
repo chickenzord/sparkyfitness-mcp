@@ -15,6 +15,7 @@ import (
 const (
 	serverName    = "sparkyfitness-mcp"
 	serverVersion = "0.1.0"
+	serverTitle   = "SparkyFitness MCP Server"
 )
 
 // Server wraps the MCP server and application configuration
@@ -33,6 +34,7 @@ func New(cfg *config.Config) (*Server, error) {
 	impl := &mcp.Implementation{
 		Name:    serverName,
 		Version: serverVersion,
+		Title:   serverTitle,
 	}
 
 	mcpServer := mcp.NewServer(impl, nil)
@@ -55,6 +57,7 @@ func (s *Server) createMCPServer() (*mcp.Server, error) {
 	impl := &mcp.Implementation{
 		Name:    serverName,
 		Version: serverVersion,
+		Title:   serverTitle,
 	}
 
 	mcpServer := mcp.NewServer(impl, nil)

@@ -44,11 +44,33 @@ type AddFoodVariantOutput struct {
 // RegisterAddFoodVariant registers the add_food_variant tool with the MCP server
 func (r *Registry) RegisterAddFoodVariant(server *mcp.Server, client *sparkyfitness.Client) error {
 	tool := &mcp.Tool{
-		Name: "add_food_variant",
-		Description: "Add a new variant (serving size + nutrition) to an EXISTING food. " +
-			"Use this when search_foods found a matching food and the user confirms they want to add a variant to it. " +
-			"Requires food_id from search_foods results. " +
-			"This adds another serving size option to an existing food entry rather than creating a new food.",
+		Name:  "add_food_variant",
+		Title: "Add Variant to Existing Food",
+		Description: "➕ Add a new serving size variant to an EXISTING food in SparkyFitness.\n\n" +
+			"**When to Use:**\n" +
+			"• search_foods found a matching food, AND\n" +
+			"• User confirms they want to add a new serving size to that existing food (not create a separate entry)\n\n" +
+			"**What This Does:**\n" +
+			"Adds another serving size option to an existing food entry. For example:\n" +
+			"• Existing food 'Enoki Mushroom' has a 100g variant\n" +
+			"• User has nutrition data for 150g serving\n" +
+			"• This tool adds the 150g variant to the SAME food entry\n\n" +
+			"**Required Input:**\n" +
+			"• food_id: UUID from search_foods results (identifies which food to add variant to)\n" +
+			"• serving_size: Numeric amount (e.g., 100, 1.5)\n" +
+			"• serving_unit: Unit of measurement (g, ml, cup, piece, oz, etc.)\n" +
+			"• Core nutrition: calories, protein, carbs, fat (all required)\n" +
+			"• Optional nutrition: fiber, sugar, vitamins, minerals, etc.\n\n" +
+			"**Output:**\n" +
+			"• variant_id: UUID of the newly created variant\n" +
+			"• Success message confirming addition\n\n" +
+			"**Example Workflow:**\n" +
+			"User: 'I have a 150g serving of Enoki Mushroom'\n" +
+			"1. search_foods(name='Enoki Mushroom') → finds food_id='abc-123' with 100g variant\n" +
+			"2. Show user: 'Found existing Enoki Mushroom with 100g variant. Add 150g variant?'\n" +
+			"3. User: 'Yes, add variant'\n" +
+			"4. add_food_variant(food_id='abc-123', serving_size=150, ...nutrition data)\n" +
+			"5. Result: Enoki Mushroom now has TWO variants (100g and 150g)",
 	}
 
 	handler := func(ctx context.Context, request *mcp.CallToolRequest, input AddFoodVariantInput) (*mcp.CallToolResult, AddFoodVariantOutput, error) {

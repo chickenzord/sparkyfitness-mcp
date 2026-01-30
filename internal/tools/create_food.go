@@ -95,11 +95,35 @@ type CreateFoodVariantNested struct {
 // RegisterCreateFoodVariant registers the create_food_variant tool with the MCP server
 func (r *Registry) RegisterCreateFoodVariant(server *mcp.Server, client *sparkyfitness.Client) error {
 	tool := &mcp.Tool{
-		Name: "create_food_variant",
-		Description: "Create a NEW food entry with default variant. " +
-			"ONLY use this when: (1) search_foods found NO matches, OR (2) user explicitly chooses to create a separate food entry despite duplicates. " +
-			"This creates a completely new food entity in the database. " +
-			"If search_foods found existing foods, consider using add_food_variant instead to add a serving size to an existing food.",
+		Name:  "create_food_variant",
+		Title: "Create New Food Entry",
+		Description: "🆕 Create a NEW food entry with default variant in SparkyFitness.\n\n" +
+			"**When to Use:**\n" +
+			"ONLY use this when:\n" +
+			"1. search_foods found NO matches (no duplicates exist), OR\n" +
+			"2. User explicitly chooses to create a separate food entry despite duplicates\n\n" +
+			"**What This Does:**\n" +
+			"Creates a completely new food entity in the database with its first serving size variant. This is NOT for adding variants to existing foods - use add_food_variant for that.\n\n" +
+			"**Required Input:**\n" +
+			"• name: Food name (e.g., 'Organic Quinoa')\n" +
+			"• brand: Brand name (optional, e.g., 'Nature's Best')\n" +
+			"• serving_size: Numeric amount (e.g., 100, 1)\n" +
+			"• serving_unit: Unit of measurement (g, ml, cup, piece, oz, etc.)\n" +
+			"• Core nutrition: calories, protein, carbs, fat (all required)\n" +
+			"• Optional nutrition: fiber, sugar, vitamins, minerals, etc.\n\n" +
+			"**Output:**\n" +
+			"• food_id: UUID of the newly created food\n" +
+			"• variant_id: UUID of the default variant\n" +
+			"• Success message\n\n" +
+			"**Example Workflow:**\n" +
+			"User: 'Add nutrition for Organic Quinoa by Nature's Best'\n" +
+			"1. search_foods(name='Organic Quinoa', brand='Nature's Best') → no matches\n" +
+			"2. create_food_variant(name='Organic Quinoa', brand='Nature's Best', ...nutrition)\n" +
+			"3. Result: New food created in database\n\n" +
+			"**Important:**\n" +
+			"If search_foods found existing foods, show them to the user first and ask whether to:\n" +
+			"• Add variant to existing food (use add_food_variant), OR\n" +
+			"• Create new separate entry (use this tool)",
 	}
 
 	handler := func(ctx context.Context, request *mcp.CallToolRequest, input CreateFoodInput) (*mcp.CallToolResult, CreateFoodOutput, error) {
