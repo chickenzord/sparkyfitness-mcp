@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/chickenzord/sparkyfitness-mcp/internal/config"
+	"github.com/chickenzord/sparkyfitness-mcp/internal/logger"
 	"github.com/chickenzord/sparkyfitness-mcp/internal/server"
 )
 
@@ -25,6 +27,15 @@ func run() error {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
+	// Initialize logger based on configuration
+	logger.InitLogger(cfg)
+
+	slog.Info("Starting SparkyFitness MCP Server",
+		"transport", cfg.Transport,
+		"log_level", cfg.LogLevel,
+		"log_format", cfg.LogFormat,
+	)
+
 	// Create the MCP server
 	srv, err := server.New(cfg)
 	if err != nil {
@@ -40,10 +51,18 @@ func run() error {
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		<-sigChan
+		sig := <-sigChan
+		slog.Info("Received shutdown signal", "signal", sig)
 		cancel()
 	}()
 
 	// Run the server
-	return srv.Run(ctx)
+	slog.Info("Server ready")
+	if err := srv.Run(ctx); err != nil {
+		slog.Error("Server error", "error", err)
+		return err
+	}
+
+	slog.Info("Server stopped gracefully")
+	return nil
 }

@@ -16,6 +16,30 @@ const (
 	TransportHTTP TransportMode = "http"
 )
 
+// LogLevel defines the logging level
+type LogLevel string
+
+const (
+	// LogLevelDebug enables debug-level logging
+	LogLevelDebug LogLevel = "debug"
+	// LogLevelInfo enables info-level logging (default)
+	LogLevelInfo LogLevel = "info"
+	// LogLevelWarn enables warn-level logging
+	LogLevelWarn LogLevel = "warn"
+	// LogLevelError enables error-level logging
+	LogLevelError LogLevel = "error"
+)
+
+// LogFormat defines the log output format
+type LogFormat string
+
+const (
+	// LogFormatText uses plain text output (default)
+	LogFormatText LogFormat = "text"
+	// LogFormatJSON uses JSON output
+	LogFormatJSON LogFormat = "json"
+)
+
 // Config holds the application configuration
 type Config struct {
 	// SparkyFitnessAPIURL is the base URL for the SparkyFitness API
@@ -32,6 +56,10 @@ type Config struct {
 	HTTPBasicAuthUser string
 	// HTTPBasicAuthPassword is the password for HTTP basic authentication (optional)
 	HTTPBasicAuthPassword string
+	// LogLevel defines the logging level (default: info)
+	LogLevel LogLevel
+	// LogFormat defines the log output format (default: text)
+	LogFormat LogFormat
 }
 
 // LoadFromEnv loads configuration from environment variables
@@ -70,6 +98,24 @@ func LoadFromEnv() (*Config, error) {
 	httpBasicAuthUser := os.Getenv("MCP_HTTP_BASIC_AUTH_USER")
 	httpBasicAuthPassword := os.Getenv("MCP_HTTP_BASIC_AUTH_PASSWORD")
 
+	// Log level (default: info)
+	logLevel := LogLevel(os.Getenv("LOG_LEVEL"))
+	if logLevel == "" {
+		logLevel = LogLevelInfo
+	}
+	if logLevel != LogLevelDebug && logLevel != LogLevelInfo && logLevel != LogLevelWarn && logLevel != LogLevelError {
+		return nil, fmt.Errorf("invalid LOG_LEVEL value: %s (must be 'debug', 'info', 'warn', or 'error')", logLevel)
+	}
+
+	// Log format (default: text)
+	logFormat := LogFormat(os.Getenv("LOG_FORMAT"))
+	if logFormat == "" {
+		logFormat = LogFormatText
+	}
+	if logFormat != LogFormatText && logFormat != LogFormatJSON {
+		return nil, fmt.Errorf("invalid LOG_FORMAT value: %s (must be 'text' or 'json')", logFormat)
+	}
+
 	return &Config{
 		SparkyFitnessAPIURL:   apiURL,
 		SparkyFitnessAPIKey:   apiKey,
@@ -78,6 +124,8 @@ func LoadFromEnv() (*Config, error) {
 		HTTPPort:              httpPort,
 		HTTPBasicAuthUser:     httpBasicAuthUser,
 		HTTPBasicAuthPassword: httpBasicAuthPassword,
+		LogLevel:              logLevel,
+		LogFormat:             logFormat,
 	}, nil
 }
 
