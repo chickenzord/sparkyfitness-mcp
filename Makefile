@@ -1,10 +1,4 @@
-.PHONY: build test clean run fmt vet docker-build docker-run generate
-
-# Generate client code from OpenAPI spec
-generate:
-	@echo "Generating SparkyFitness API client from swagger.json..."
-	go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen -config oapi-codegen.yaml swagger.json
-	go fmt ./internal/sparkyfitness/...
+.PHONY: build test clean run fmt vet docker-build docker-run
 
 # Build the binary
 build:

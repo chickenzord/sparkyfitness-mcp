@@ -1,154 +1,46 @@
 # SparkyFitness MCP Server
 
-A stateless Go-based MCP (Model Context Protocol) server that acts as an API bridge between Claude Chat and the SparkyFitness backend. This server enables users to create and search food items in SparkyFitness by uploading nutrition label photos to Claude Chat.
+A stateless Go-based MCP (Model Context Protocol) server that acts as an API bridge between Claude Chat and the SparkyFitness backend. This server enables you to create and search food items in SparkyFitness by uploading nutrition label photos to Claude Chat.
 
 ## Features
 
-- **Stateless Design**: Pure API translation layer with no local storage
+- **Vision-Powered Food Entry**: Upload nutrition labels to Claude Chat, which automatically extracts nutrition data and creates food entries
+- **Smart Search**: Find existing foods to avoid duplicates
+- **Variant Management**: Add multiple serving sizes to the same food (e.g., 100g, 150g, 1 cup)
 - **Dual Transport Support**:
   - **stdio**: For local Claude Desktop integration
   - **HTTP/SSE**: For remote deployment and claude.ai web integration
-- **MCP Tools**:
-  - `search_foods`: Search for existing foods in the database
-  - `create_food_variant`: Create new food entries with nutrition data
-- **Vision Integration**: Upload nutrition labels to Claude Chat, which extracts data and creates food entries
+- **Stateless Design**: Pure API translation layer with no local storage
 
-## Architecture
+## Quick Start
 
-- **Language**: Go
-- **Design**: Stateless API translation layer
-- **Package Structure**:
-  - `/cmd/sparkyfitness-mcp` - Main entry point
-  - `/internal/server` - MCP server implementation
-  - `/internal/config` - Configuration management
-  - `/internal/sparkyfitness` - SparkyFitness API client
-  - `/internal/tools` - MCP tool implementations
+### Using Claude Desktop (Local)
 
-## Prerequisites
+1. **Download or build the binary** (see [Releases](https://github.com/chickenzord/sparkyfitness-mcp/releases))
 
-- Go 1.25 or later
-- SparkyFitness API access (URL and API key)
+2. **Add to Claude Desktop configuration**:
 
-## Configuration
+   On macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-### Environment Variables
+   ```json
+   {
+     "mcpServers": {
+       "sparkyfitness": {
+         "command": "/path/to/sparkyfitness-mcp",
+         "env": {
+           "SPARKYFITNESS_API_URL": "https://api.sparkyfitness.com",
+           "SPARKYFITNESS_API_KEY": "your-api-key"
+         }
+       }
+     }
+   }
+   ```
 
-#### Required
+3. **Restart Claude Desktop**
 
-| Variable | Description |
-|----------|-------------|
-| `SPARKYFITNESS_API_URL` | Base URL of the SparkyFitness API |
-| `SPARKYFITNESS_API_KEY` | Authentication credential for the API |
+4. **Start using it**: Upload a nutrition label photo and ask Claude to add it to SparkyFitness!
 
-#### Optional (Transport Configuration)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MCP_TRANSPORT` | `stdio` | Transport mode: `stdio` or `http` |
-| `MCP_HTTP_HOST` | `0.0.0.0` | Host to bind to (HTTP mode only) |
-| `MCP_HTTP_PORT` | `8080` | Port to listen on (HTTP mode only) |
-
-## Development
-
-### Generate API Client
-
-The SparkyFitness API client is auto-generated from the OpenAPI specification:
-
-```bash
-make generate
-```
-
-This uses `oapi-codegen` to generate type-safe client code from `swagger.json`. The generated code should not be edited manually.
-
-### Build
-
-```bash
-make build
-# or
-go build -o sparkyfitness-mcp ./cmd/sparkyfitness-mcp
-```
-
-### Test
-
-```bash
-make test
-# or
-go test ./...
-```
-
-### Run
-
-#### Stdio Transport (Claude Desktop)
-
-Default mode for local Claude Desktop integration:
-
-```bash
-# Set environment variables
-export SPARKYFITNESS_API_URL=https://api.sparkyfitness.com
-export SPARKYFITNESS_API_KEY=your-api-key
-
-# Run the server
-make run
-# or
-./sparkyfitness-mcp
-```
-
-Add to Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
-
-```json
-{
-  "mcpServers": {
-    "sparkyfitness": {
-      "command": "/path/to/sparkyfitness-mcp",
-      "env": {
-        "SPARKYFITNESS_API_URL": "https://api.sparkyfitness.com",
-        "SPARKYFITNESS_API_KEY": "your-api-key"
-      }
-    }
-  }
-}
-```
-
-#### HTTP Transport (Remote / claude.ai Web)
-
-For remote deployment or claude.ai web integration:
-
-```bash
-export SPARKYFITNESS_API_URL=https://api.sparkyfitness.com
-export SPARKYFITNESS_API_KEY=your-api-key
-export MCP_TRANSPORT=http
-export MCP_HTTP_HOST=0.0.0.0
-export MCP_HTTP_PORT=8080
-
-./sparkyfitness-mcp
-```
-
-The server will start on `http://0.0.0.0:8080` with:
-- MCP endpoint: `http://localhost:8080/mcp/`
-- Health check: `http://localhost:8080/health`
-
-## Docker
-
-### Build Image
-
-```bash
-make docker-build
-# or
-docker build -t sparkyfitness-mcp .
-```
-
-### Run Container
-
-#### Stdio Transport
-
-```bash
-docker run \
-  -e SPARKYFITNESS_API_URL=https://api.sparkyfitness.com \
-  -e SPARKYFITNESS_API_KEY=your-api-key \
-  sparkyfitness-mcp
-```
-
-#### HTTP Transport
+### Using Docker
 
 ```bash
 docker run -p 8080:8080 \
@@ -160,48 +52,117 @@ docker run -p 8080:8080 \
   sparkyfitness-mcp
 ```
 
-## MCP Tools
+Then connect from claude.ai web using the MCP endpoint: `http://localhost:8080/mcp/`
+
+## Configuration
+
+### Required Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `SPARKYFITNESS_API_URL` | Base URL of the SparkyFitness API |
+| `SPARKYFITNESS_API_KEY` | Your API key for authentication |
+
+### Optional Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_TRANSPORT` | `stdio` | Transport mode: `stdio` or `http` |
+| `MCP_HTTP_HOST` | `0.0.0.0` | Host to bind to (HTTP mode only) |
+| `MCP_HTTP_PORT` | `8080` | Port to listen on (HTTP mode only) |
+| `MCP_HTTP_BASIC_AUTH_USER` | - | Username for HTTP basic auth (optional) |
+| `MCP_HTTP_BASIC_AUTH_PASSWORD` | - | Password for HTTP basic auth (optional) |
+
+## Available Tools
+
+This MCP server provides three tools that Claude can use:
 
 ### `search_foods`
 
-Search for foods in the SparkyFitness database by name and optional filters.
+Search for foods in the SparkyFitness database to avoid duplicates.
 
-**Parameters:**
-- `name` (string, required) - Food name to search for
-- `brand` (string, optional) - Brand name to filter results
-- `broad_match` (boolean, optional) - If true, performs broad matching (default: true)
-- `limit` (integer, optional) - Maximum number of results to return (default: 10)
+**Example:**
+```
+User: "Find nutrition info for chicken breast"
+Claude: [Uses search_foods to find existing entries]
+```
 
 ### `create_food_variant`
 
-Create a new food entry with nutrition data. Upserts the Food entity by name+brand.
+Create a completely new food entry with its first serving size variant.
 
-**Parameters:**
-- `name` (string, required) - Food name
-- `brand` (string, optional) - Brand name
-- `serving_size` (number, required) - Numeric amount (e.g., 100, 1)
-- `serving_unit` (string, required) - Unit (e.g., "g", "ml", "cup", "piece")
-- `calories` (number, required) - Calories per serving
-- `protein_g` (number, required) - Protein in grams
-- `carbs_g` (number, required) - Carbohydrates in grams
-- `fat_g` (number, required) - Fat in grams
-- `fiber_g` (number, optional) - Fiber in grams
-- `sugar_g` (number, optional) - Sugar in grams
-- `sodium_mg` (number, optional) - Sodium in milligrams
-- `set_default` (boolean, optional) - Set this variant as the food's default variant
-
-## Usage Example
-
-1. **Upload a nutrition label photo to Claude Chat**
-2. **Claude extracts the nutrition facts automatically using vision**
-3. **Claude calls `create_food_variant` with the structured data**
-4. **The food entry is created in SparkyFitness**
-
-Or search for existing foods:
-
+**Example:**
 ```
-User: "Find nutrition info for chicken breast"
-Claude: [Calls search_foods tool]
-Claude: "I found several chicken breast options..."
+User: [Uploads photo of nutrition label]
+Claude: [Extracts data, searches for duplicates, then creates new entry if none found]
 ```
 
+### `add_food_variant`
+
+Add a new serving size variant to an existing food.
+
+**Example:**
+```
+User: "I have nutrition data for Enoki Mushroom 150g serving"
+Claude: "Found existing Enoki Mushroom with 100g variant. Add 150g variant?"
+User: "Yes"
+Claude: [Adds 150g variant to the existing food]
+```
+
+## Usage Examples
+
+### Adding a New Food
+
+1. Upload a nutrition label photo to Claude Chat
+2. Claude automatically:
+   - Extracts nutrition facts using vision
+   - Searches for duplicates
+   - Creates the food entry if it doesn't exist
+   - Confirms success with food ID
+
+### Searching for Foods
+
+```
+User: "What's the nutrition info for quinoa?"
+Claude: [Searches and shows available options with nutrition details]
+```
+
+### Managing Variants
+
+```
+User: "Add a 1 cup serving size for Brown Rice"
+Claude: [Searches, finds existing food, asks to confirm, adds variant]
+```
+
+## Security
+
+### HTTP Basic Authentication
+
+When running in HTTP mode, you can optionally enable basic authentication:
+
+```bash
+export MCP_HTTP_BASIC_AUTH_USER=admin
+export MCP_HTTP_BASIC_AUTH_PASSWORD=your-secret-password
+```
+
+**Note**: Both username and password must be set to enable authentication. If either is missing, authentication is disabled.
+
+## Health Check
+
+When running in HTTP mode, the server provides a health check endpoint:
+
+```bash
+curl http://localhost:8080/health
+```
+
+## Contributing
+
+For development setup, building from source, and contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+See [LICENSE](LICENSE) for details.
+
+## Support
+
+For issues, questions, or feature requests, please open an issue on [GitHub](https://github.com/chickenzord/sparkyfitness-mcp/issues).
