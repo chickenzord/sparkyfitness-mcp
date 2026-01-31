@@ -87,7 +87,7 @@ go test -cover ./...
 
 ```bash
 # Set environment variables
-export SPARKYFITNESS_API_URL=https://api.sparkyfitness.com
+export SPARKYFITNESS_API_URL=http://localhost:8000
 export SPARKYFITNESS_API_KEY=your-api-key
 
 # Run the server
@@ -99,7 +99,7 @@ make run
 ### HTTP Transport (for web/remote development)
 
 ```bash
-export SPARKYFITNESS_API_URL=https://api.sparkyfitness.com
+export SPARKYFITNESS_API_URL=http://localhost:8000
 export SPARKYFITNESS_API_KEY=your-api-key
 export MCP_TRANSPORT=http
 export MCP_HTTP_HOST=0.0.0.0
@@ -126,7 +126,7 @@ docker build -t sparkyfitness-mcp .
 
 ```bash
 docker run \
-  -e SPARKYFITNESS_API_URL=https://api.sparkyfitness.com \
+  -e SPARKYFITNESS_API_URL=http://localhost:8000 \
   -e SPARKYFITNESS_API_KEY=your-api-key \
   sparkyfitness-mcp
 ```
@@ -135,7 +135,7 @@ docker run \
 
 ```bash
 docker run -p 8080:8080 \
-  -e SPARKYFITNESS_API_URL=https://api.sparkyfitness.com \
+  -e SPARKYFITNESS_API_URL=http://localhost:8000 \
   -e SPARKYFITNESS_API_KEY=your-api-key \
   -e MCP_TRANSPORT=http \
   -e MCP_HTTP_HOST=0.0.0.0 \
@@ -207,7 +207,7 @@ When adding new backend API endpoints:
 
 ### Required
 
-- `SPARKYFITNESS_API_URL` - Base URL of SparkyFitness API
+- `SPARKYFITNESS_API_URL` - Base URL of SparkyFitness server component (backend), not the frontend. Example: `http://localhost:8000`
 - `SPARKYFITNESS_API_KEY` - Authentication credential for SparkyFitness API
 
 ### Optional

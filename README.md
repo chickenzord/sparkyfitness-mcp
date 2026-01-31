@@ -28,13 +28,15 @@ A stateless Go-based MCP (Model Context Protocol) server that acts as an API bri
        "sparkyfitness": {
          "command": "/path/to/sparkyfitness-mcp",
          "env": {
-           "SPARKYFITNESS_API_URL": "https://api.sparkyfitness.com",
+           "SPARKYFITNESS_API_URL": "http://localhost:8000",
            "SPARKYFITNESS_API_KEY": "your-api-key"
          }
        }
      }
    }
    ```
+
+   **Note:** Replace `http://localhost:8000` with the actual URL of your SparkyFitness server component (backend).
 
 3. **Restart Claude Desktop**
 
@@ -44,13 +46,15 @@ A stateless Go-based MCP (Model Context Protocol) server that acts as an API bri
 
 ```bash
 docker run -p 8080:8080 \
-  -e SPARKYFITNESS_API_URL=https://api.sparkyfitness.com \
+  -e SPARKYFITNESS_API_URL=http://localhost:8000 \
   -e SPARKYFITNESS_API_KEY=your-api-key \
   -e MCP_TRANSPORT=http \
   -e MCP_HTTP_HOST=0.0.0.0 \
   -e MCP_HTTP_PORT=8080 \
   sparkyfitness-mcp
 ```
+
+**Note:** Replace `http://localhost:8000` with the actual URL of your SparkyFitness server component (backend).
 
 Then connect from claude.ai web using the MCP endpoint: `http://localhost:8080/mcp/`
 
@@ -60,7 +64,7 @@ Then connect from claude.ai web using the MCP endpoint: `http://localhost:8080/m
 
 | Variable | Description |
 |----------|-------------|
-| `SPARKYFITNESS_API_URL` | Base URL of the SparkyFitness API |
+| `SPARKYFITNESS_API_URL` | Base URL of the SparkyFitness **server component** (backend), not the frontend. Example: `http://localhost:8000` or `https://sparkyfitness-server.example.com` |
 | `SPARKYFITNESS_API_KEY` | Your API key for authentication |
 
 ### Optional Environment Variables
