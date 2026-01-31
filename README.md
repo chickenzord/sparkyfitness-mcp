@@ -1,16 +1,18 @@
 # SparkyFitness MCP Server
 
-A stateless Go-based MCP (Model Context Protocol) server that acts as an API bridge between Claude Chat and the SparkyFitness backend. This server enables you to create and search food items in SparkyFitness by uploading nutrition label photos to Claude Chat.
+A stateless Go-based MCP (Model Context Protocol) server that acts as an API bridge between AI agents (like Claude Chat) and the SparkyFitness backend. This server provides tools to create and search food items with complete nutrition data.
 
 ## Features
 
-- **Vision-Powered Food Entry**: Upload nutrition labels to Claude Chat, which automatically extracts nutrition data and creates food entries
-- **Smart Search**: Find existing foods to avoid duplicates
+- **Smart Search**: Find existing foods in the database to avoid duplicates
+- **Food Creation**: Create new food entries with complete nutrition data
 - **Variant Management**: Add multiple serving sizes to the same food (e.g., 100g, 150g, 1 cup)
 - **Dual Transport Support**:
   - **stdio**: For local Claude Desktop integration
   - **HTTP/SSE**: For remote deployment and claude.ai web integration
 - **Stateless Design**: Pure API translation layer with no local storage
+
+**Works seamlessly with AI agents:** When used with Claude Chat or other vision-capable AI agents, users can upload nutrition label photos and have the AI automatically extract data before calling the MCP tools.
 
 ## Quick Start
 
@@ -149,13 +151,13 @@ Result: Enoki Mushroom now has TWO variants (100g and 150g)
 
 ## Usage Examples
 
-### Adding a New Food
+### Adding a New Food (with Claude Chat)
 
 1. Upload a nutrition label photo to Claude Chat
-2. Claude automatically:
-   - Extracts nutrition facts using vision
-   - Searches for duplicates
-   - Creates the food entry if it doesn't exist
+2. Claude Chat uses its vision capabilities to extract nutrition facts from the photo
+3. Claude Chat calls the MCP tools:
+   - Searches for duplicates using `search_foods`
+   - Creates the food entry using `create_food_variant` if no duplicates found
    - Confirms success with food ID
 
 ### Searching for Foods
