@@ -81,36 +81,70 @@ Then connect from claude.ai web using the MCP endpoint: `http://localhost:8080/m
 
 This MCP server provides three tools that Claude can use:
 
-### `search_foods`
+### 🔍 `search_foods`
 
-Search for foods in the SparkyFitness database to avoid duplicates.
+Search for existing foods in the SparkyFitness nutrition database. **Always call this first** before creating any food to prevent duplicates.
+
+**What it does:**
+- Searches by food name and optionally filters by brand
+- Returns matching foods with complete nutrition data for their default variants
+- Provides `food_id` values needed for adding variants to existing foods
+
+**Search modes:**
+- `broad_match=true` (default): Fuzzy case-insensitive search that finds similar foods
+- `broad_match=false`: Exact matching for precise results
 
 **Example:**
 ```
 User: "Find nutrition info for chicken breast"
-Claude: [Uses search_foods to find existing entries]
+Claude: [Calls search_foods]
+Result: List of matching foods with nutrition facts
 ```
 
-### `create_food_variant`
+### 🆕 `create_food_variant`
 
-Create a completely new food entry with its first serving size variant.
+Create a **completely new** food entry with its first serving size variant. Only use when no matching food exists or user explicitly wants a separate entry.
+
+**When to use:**
+- `search_foods` found NO matches (no duplicates exist), OR
+- User explicitly chooses to create a separate food entry despite duplicates
+
+**What it does:**
+- Creates a new food entity in the database
+- Adds the first serving size variant as the default
+- Returns both `food_id` and `variant_id`
+
+**Important:** Not for adding variants to existing foods - use `add_food_variant` for that.
 
 **Example:**
 ```
-User: [Uploads photo of nutrition label]
-Claude: [Extracts data, searches for duplicates, then creates new entry if none found]
+User: [Uploads photo of nutrition label for "Organic Quinoa"]
+Claude: [Searches first, finds no matches]
+Claude: [Creates new food entry with nutrition data]
+Result: New food created successfully
 ```
 
-### `add_food_variant`
+### ➕ `add_food_variant`
 
-Add a new serving size variant to an existing food.
+Add a new serving size variant to an **existing** food. Use this to add alternative serving sizes to foods found via `search_foods`.
+
+**When to use:**
+- `search_foods` found a matching food, AND
+- User wants to add a new serving size to that existing food (not create a separate entry)
+
+**What it does:**
+- Adds another serving size option to an existing food entry
+- Requires `food_id` from search results
+- Example: Food has 100g variant, add 150g variant to the same food
 
 **Example:**
 ```
 User: "I have nutrition data for Enoki Mushroom 150g serving"
+Claude: [Searches and finds existing Enoki Mushroom with 100g variant]
 Claude: "Found existing Enoki Mushroom with 100g variant. Add 150g variant?"
 User: "Yes"
-Claude: [Adds 150g variant to the existing food]
+Claude: [Calls add_food_variant with food_id and nutrition data]
+Result: Enoki Mushroom now has TWO variants (100g and 150g)
 ```
 
 ## Usage Examples
